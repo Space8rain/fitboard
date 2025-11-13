@@ -18,6 +18,7 @@ func LoggerMiddleware(next bot.HandlerFunc) bot.HandlerFunc {
 			log.Printf("🆔 Telegram ID: %d\n", user.ID)
 			log.Printf("📣 Чат ID: %d\n", chat.ID)
 			log.Printf("✉️ Сообщение: %s\n", text)
+			log.Println("⚡⚡⚡⚡⚡⚡⚡⚡⚡⚡")
 
 			next(ctx, b, update)
 		}
