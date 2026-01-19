@@ -7,13 +7,12 @@ import (
 	"github.com/go-telegram/bot"
 )
 
-
 func NewBot() (*bot.Bot, error) {
-	cfg := config.Load();
+	cfg := config.Load()
 
 	if cfg.BotToken == "" {
 		log.Fatal("TOKEN_BOT не найден")
 	}
 
-  return bot.New(cfg.BotToken)
+	return bot.New(cfg.BotToken)
 }
