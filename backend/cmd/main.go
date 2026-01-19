@@ -3,16 +3,18 @@ package main
 import (
 	"context"
 	"database/sql"
-	_ "github.com/lib/pq" // драйвер PostgreSQL
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq" // драйвер PostgreSQL
 
 	"fitboard/backend/internal/db"
-	"fitboard/backend/internal/tgbot"
 	"fitboard/backend/internal/handlers"
+	"fitboard/backend/internal/tgbot"
 )
 
 func main() {
@@ -21,9 +23,15 @@ func main() {
 	defer cancel()
 
 	// Подключение к БД
-	connStr := "postgres://postgres:965478@localhost:5432/fitboard_db?sslmode=disable"
+	err := godotenv.Load(".env")
 
-	database, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal("Ошибка загрузки .env файла")
+	}
+
+	DB_CONN_STR := os.Getenv("DB_CONN_STR")
+	
+	database, err := sql.Open("postgres", DB_CONN_STR)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к БД: %v", err)
 	}
