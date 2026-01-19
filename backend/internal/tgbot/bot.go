@@ -1,26 +1,19 @@
 package tgbot
 
 import (
-  "github.com/go-telegram/bot"
-	"github.com/joho/godotenv"
+	"fitboard/backend/config"
 	"log"
-	"os"
 
+	"github.com/go-telegram/bot"
 )
 
 
 func NewBot() (*bot.Bot, error) {
-  	// Загружаем .env
-	err := godotenv.Load(".env")
+	cfg := config.Load();
 
-	if err != nil {
-		log.Fatal("Ошибка загрузки .env файла")
-	}
-
-	token := os.Getenv("TOKEN_BOT")
-	if token == "" {
+	if cfg.BotToken == "" {
 		log.Fatal("TOKEN_BOT не найден")
 	}
 
-  return bot.New(token)
+  return bot.New(cfg.BotToken)
 }

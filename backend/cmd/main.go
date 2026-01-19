@@ -9,9 +9,9 @@ import (
 	"os/signal"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // драйвер PostgreSQL
 
+	"fitboard/backend/config"
 	"fitboard/backend/internal/db"
 	"fitboard/backend/internal/handlers"
 	"fitboard/backend/internal/tgbot"
@@ -23,15 +23,9 @@ func main() {
 	defer cancel()
 
 	// Подключение к БД
-	err := godotenv.Load(".env")
+	cfg := config.Load();
 
-	if err != nil {
-		log.Fatal("Ошибка загрузки .env файла")
-	}
-
-	DB_CONN_STR := os.Getenv("DB_CONN_STR")
-	
-	database, err := sql.Open("postgres", DB_CONN_STR)
+	database, err := sql.Open("postgres", cfg.DBConnStr)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к БД: %v", err)
 	}

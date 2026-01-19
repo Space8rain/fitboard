@@ -98,7 +98,7 @@ func confirmRoleHandler(ctx context.Context, b *bot.Bot, update *models.Update) 
 						{
 							Text: "Открыть в приложении:",
 							WebApp: &models.WebAppInfo{
-								URL: "http://localhost:5173/",
+								URL: "https://www.google.com/",
 							},
 						},
 					},
@@ -190,7 +190,7 @@ func deleteUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// 3. удаляем reply‑клавиатуру
 	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Text:   "удаление клавиатуры",
+		// Text:   "удаление клавиатуры",
 		ReplyMarkup: &models.ReplyKeyboardRemove{
 			RemoveKeyboard: true,
 			Selective:      false, // если true — убирается только у конкретного пользователя
