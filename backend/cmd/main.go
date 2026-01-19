@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
-	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq" // драйвер PostgreSQL
+	"golang.org/x/sync/errgroup"
 
-	"fitboard/backend/config"
+	"fitboard/backend/internal/config"
 	"fitboard/backend/internal/db"
 	"fitboard/backend/internal/handlers"
+	"fitboard/backend/internal/httpserver"
 	"fitboard/backend/internal/tgbot"
 )
 
@@ -22,9 +24,9 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	// Подключение к БД
-	cfg := config.Load();
+	cfg := config.Load()
 
+	// Подключение к БД
 	database, err := sql.Open("postgres", cfg.DBConnStr)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к БД: %v", err)
@@ -41,21 +43,48 @@ func main() {
 
 	tgbot.RegisterHandlers(bot)
 
-	// HTTP‑маршруты для фронта
-	r := chi.NewRouter()
-	r.Get("/api/ping", handlers.Ping)
-	r.Get("/api/users", handlers.Users)
-	r.Get("/api/trainers", handlers.Trainers)
+	// Инициализация HTTP сервера
+	h := handlers.New()
+	r := httpserver.NewRouter(h)
 
-	// Запуск HTTP‑сервера
-	go func() {
-		log.Println("HTTP сервер запущен на :3000")
-		if err := http.ListenAndServe(":3000", r); err != nil {
-			log.Fatalf("Ошибка запуска HTTP сервера: %v", err)
-		}
-	}()
+	srv := &http.Server{
+		Addr: ":3000", Handler: r,
+	}
+
+	// Группа параллельных задач
+	g, gctx := errgroup.WithContext(ctx)
 
 	// Запуск бота
-	log.Printf("Бот запущен...")
-	bot.Start(ctx)
+	g.Go(func() error {
+		log.Println("Бот запущен...")
+		bot.Start(gctx)
+		return nil
+	})
+
+	// Запуск HTTP сервера
+	g.Go(func() error {
+		log.Println("HTTP server started on :3000")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
+		return nil
+	})
+
+	// Грейсфул-шатдаун
+	g.Go(func() error {
+		<-gctx.Done()
+		log.Println("Завершение работы...")
+
+		// Остановка HTTP сервера
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		srv.Shutdown(shutdownCtx)
+
+		return nil
+	})
+
+	// Ожидание завершения
+	if err := g.Wait(); err != nil {
+		log.Println("Ошибка:", err)
+	}
 }

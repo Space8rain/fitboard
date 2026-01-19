@@ -1,7 +1,7 @@
 package tgbot
 
 import (
-	"fitboard/backend/config"
+	"fitboard/backend/internal/config"
 	"log"
 
 	"github.com/go-telegram/bot"

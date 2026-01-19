@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+    Env string
     BotToken   string
     DBConnStr  string
     WebAppURL  string
@@ -21,9 +22,14 @@ func Load() *Config {
 	}
 
     cfg := &Config{
+        Env:       os.Getenv("APP_ENV"),
         BotToken:  os.Getenv("TOKEN_BOT"),
         DBConnStr: os.Getenv("DB_CONN_STR"),
         WebAppURL: os.Getenv("WEB_APP_URL"),
+    }
+
+    if cfg.Env == "" {
+        log.Fatal("APP_ENV is required")
     }
 
     if cfg.BotToken == "" {

@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	// "fmt"
 )
 
 type UserRepository struct {
@@ -60,4 +59,47 @@ func (r *UserRepository) DeleteUser(telegramID int64) (bool, error) {
 	}
 
 	return rows > 0, nil
+}
+
+func (r *UserRepository) GetAll() ([]User, error) {
+	rows, err := r.DB.Query(`
+    SELECT 
+        id,
+        telegram_id,
+        role,
+        username,
+        first_name,
+        COALESCE(last_name, ''),
+        COALESCE(email, ''),
+        COALESCE(phone, ''),
+        created_at
+    FROM users
+`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(
+			&u.ID,
+			&u.TelegramID,
+			&u.Role,
+			&u.Username,
+			&u.FirstName,
+			&u.LastName,
+			&u.Email,
+			&u.Phone,
+			&u.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		users = append(users, u)
+	}
+
+	return users, nil
 }
