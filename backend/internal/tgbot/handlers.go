@@ -11,16 +11,13 @@ import (
 )
 
 func RegisterHandlers(b *bot.Bot) {
-	// b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeCommandStartOnly, LoggerMiddleware(startHandler))
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeCommandStartOnly, LoggerMiddleware(startHandler))
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "confirm_role", bot.MatchTypeExact, confirmRoleHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "disapprove_role", bot.MatchTypeExact, disapproveRoleHandler)
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "req", bot.MatchTypePrefix, LoggerMiddleware(startHandler))
 	b.RegisterHandler(bot.HandlerTypeMessageText, "del", bot.MatchTypePrefix, LoggerMiddleware(deleteUserHandler))
 }
-
-// var idDog int64 = 469895624
-// var idMy int64 = 413870391
 
 // Обработчик сообщений
 func startHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -87,20 +84,58 @@ func confirmRoleHandler(ctx context.Context, b *bot.Bot, update *models.Update) 
 		ShowAlert:       false,
 	})
 
-	// 3. Проверяем, что сообщение доступно
 	if callback.Message.Message != nil {
 		msg := callback.Message.Message
 
-		// Меняем текст и убираем клавиатуру
+		// Меняем текст и убираем старую inline‑клавиатуру
 		_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
-			ChatID:      msg.Chat.ID,
-			MessageID:   msg.ID,
-			Text:        "👋 Привет! Роль тренера подтверждена ✅",
-			ReplyMarkup: nil,
+			ChatID:    msg.Chat.ID,
+			MessageID: msg.ID,
+			Text:      "Роль тренера подтверждена ✅",
+			ReplyMarkup: &models.InlineKeyboardMarkup{
+				InlineKeyboard: [][]models.InlineKeyboardButton{
+					{
+						{
+							Text: "Открыть в приложении:",
+							WebApp: &models.WebAppInfo{
+								URL: "http://localhost:5173/",
+							},
+						},
+					},
+				},
+			},
 		})
 		if err != nil {
 			log.Printf("Ошибка при редактировании сообщения: %v", err)
 		}
+
+		// 3. Отправляем новое сообщение с reply‑клавиатурой
+		// _, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		// 	ChatID: msg.Chat.ID,
+		// 	Text:   "Выберите действие:",
+		// 	ReplyMarkup: &models.ReplyKeyboardMarkup{
+		// 		Keyboard: [][]models.KeyboardButton{
+		// 			{
+		// 				{Text: "➕ Добавить тренировку"},
+		// 				{Text: "👤 Добавить клиента"},
+		// 			},
+		// 			{
+		// 				{Text: "✏️ Редактировать тренировку"},
+		// 				{Text: "📋 Остальное"},
+		// 			},
+		// 			{
+		// 				{Text: "📞 Отправить номер", RequestContact: true},
+		// 				{Text: "📍 Отправить геопозицию", RequestLocation: true},
+		// 				{Text: "📊 Создать опрос", RequestPoll: &models.KeyboardButtonPollType{Type: "regular"}},
+		// 			},
+		// 		},
+		// 		ResizeKeyboard:  true,  // клавиатура подгоняется под экран
+		// 		OneTimeKeyboard: false, // не исчезает сразу
+		// 	},
+		// })
+		// if err != nil {
+		// 	log.Printf("Ошибка при отправке клавиатуры: %v", err)
+		// }
 	}
 }
 
@@ -108,11 +143,11 @@ func disapproveRoleHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 	callback := update.CallbackQuery
 
 	// 1. Ответим на сам callback (убираем "часики")
-	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
-		CallbackQueryID: callback.ID,
-		Text:            "❌ Хорошо, ждем когда вам назначат тренировки",
-		ShowAlert:       false,
-	})
+	// b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+	// 	CallbackQueryID: callback.ID,
+	// 	Text:            "❌ Хорошо, ждем когда вам назначат тренировки",
+	// 	ShowAlert:       false,
+	// })
 
 	// 2. Проверяем, что сообщение доступно
 	if callback.Message.Message != nil {
@@ -122,7 +157,7 @@ func disapproveRoleHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 		_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 			ChatID:      msg.Chat.ID,
 			MessageID:   msg.ID,
-			Text:        "Роль тренера отклонена ❌",
+			Text:        "Хорошо, сообщим когда вам назначат тренировки 🏅",
 			ReplyMarkup: nil,
 		})
 		if err != nil {
@@ -151,4 +186,63 @@ func deleteUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		ChatID: update.Message.Chat.ID,
 		Text:   text,
 	})
+
+	// 3. удаляем reply‑клавиатуру
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   "удаление клавиатуры",
+		ReplyMarkup: &models.ReplyKeyboardRemove{
+			RemoveKeyboard: true,
+			Selective:      false, // если true — убирается только у конкретного пользователя
+		},
+	})
+	if err != nil {
+		log.Printf("Ошибка при удалении клавиатуры: %v", err)
+	}
+}
+
+func replyKeyboardMessageHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message == nil {
+		return
+	}
+
+	text := update.Message.Text
+	// userID := update.Message.From.ID
+
+	switch text {
+	case "➕ Добавить тренировку":
+		// Логика добавления тренировки
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Введите данные для новой тренировки (дата, время, описание):",
+		})
+
+	case "👤 Добавить клиента":
+		// Логика добавления клиента
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Введите имя клиента:",
+		})
+
+	case "✏️ Редактировать тренировку":
+		// Логика редактирования
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Выберите тренировку для редактирования:",
+		})
+
+	case "📋 Остальное":
+		// Дополнительные действия
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Доступные функции: перенос, отмена, напоминания об оплате.",
+		})
+
+	default:
+		// Ответ по умолчанию
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Не понял команду. Используйте кнопки на клавиатуре 👇",
+		})
+	}
 }
