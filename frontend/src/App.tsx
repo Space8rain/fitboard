@@ -1,13 +1,8 @@
-  //@ts-nocheck
-
-// import { useEffect, useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
-  const user = window.Telegram.WebApp?.initDataUnsafe?.user;
-  // const [user, setUser] = useState();
+  const [user, setUser] = useState<TelegramUser>();
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
